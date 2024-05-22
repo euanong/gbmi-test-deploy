@@ -1,0 +1,28 @@
+FROM python:3.10-slim@sha256:31b1e4b1c4a1903649c95fa5e46c1066baf6acdd33167813af9fa7905355e1a3
+# install the notebook package
+RUN pip install --no-cache --upgrade pip && \
+    pip install --no-cache notebook jupyterlab
+RUN apt update && apt install -y curl
+
+# create user with a home directory
+ARG NB_USER=jovyan
+ARG NB_UID=1000
+ENV USER ${NB_USER}
+ENV NB_UID ${NB_UID}
+ENV HOME /home/${NB_USER}
+
+RUN adduser --disabled-password \
+    --gecos "Default user" \
+    --uid ${NB_UID} \
+    ${NB_USER}
+WORKDIR ${HOME}
+USER ${USER}
+
+COPY . ${HOME}
+USER root
+RUN chown -R ${NB_UID} ${HOME}
+USER ${NB_USER}
+
+RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN /home/${USER}/.local/bin/poetry install
+RUN echo "/home/${USER}/.local/bin/poetry shell" >> .bashrc
